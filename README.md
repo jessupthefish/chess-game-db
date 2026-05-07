@@ -12,9 +12,7 @@ Users can search and filter games by player, opening, or result, view player sta
 
 ### Data source
 
-PGN data from [mainali123/Chess-Dataset](https://github.com/mainali123/Chess-Dataset), which mirrors the World Championship subset of [pgnmentor.com](https://www.pgnmentor.com). ECO opening names from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings). The FIDE knockout-format championships from 1998–2004 are excluded — those used a 128-player single-elimination format rather than a head-to-head title match, and including their ~2000 qualifier games would have drowned out the actual title matches.
-
-The classical title-match scope means coverage stops at 2008. Modern matches (2010 onward) are not yet in the database.
+PGN data from [mainali123/Chess-Dataset](https://github.com/mainali123/Chess-Dataset), which mirrors the World Championship subset of [pgnmentor.com](https://www.pgnmentor.com). ECO opening names from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings).
 
 ### ER-to-Relational Mapping
 
