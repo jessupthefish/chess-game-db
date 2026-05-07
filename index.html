@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChessDB</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f0f0f; --bg-card:#1a1a1a; --bg-hover:#222; --bg-input:#151515;
+  --border:#2a2a2a; --border-lt:#333;
+  --text:#e8e6e1; --text-dim:#8a8780; --text-muted:#5a5850;
+  --accent:#c9a84c; --accent-dim:#a08530;
+  --green:#5a9e5a; --red:#c45a5a; --draw:#888;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+a{color:var(--accent);text-decoration:none;cursor:pointer}
+a:hover{color:var(--text)}
+
+/* NAV */
+nav{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:2rem;height:56px;position:sticky;top:0;background:var(--bg);z-index:100}
+.logo{font-size:1.05rem;font-weight:600;color:var(--accent);letter-spacing:.5px;cursor:pointer}
+.logo span{font-size:1.2rem}
+.links{display:flex;gap:.25rem}
+.links a{color:var(--text-dim);padding:.4rem .75rem;border-radius:6px;font-size:.85rem;font-weight:500;transition:all .15s}
+.links a:hover,.links a.active{color:var(--text);background:var(--bg-hover)}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:2rem}
+.page-header{margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center}
+.page-header h1{font-size:1.5rem;font-weight:600}
+.page-header p{color:var(--text-dim);font-size:.9rem;margin-top:.25rem}
+
+/* FILTERS */
+.filters{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.filters input,.filters select{background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:.5rem .75rem;border-radius:6px;font-family:inherit;font-size:.85rem;outline:none;transition:border-color .15s}
+.filters input:focus,.filters select:focus{border-color:var(--accent-dim)}
+.filters input{flex:1;min-width:200px}
+.btn{background:var(--accent-dim);color:var(--bg);border:none;padding:.5rem 1rem;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:500;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--accent)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim)}
+.btn-outline:hover{border-color:var(--accent-dim);color:var(--text);background:transparent}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+thead th{text-align:left;padding:.6rem .75rem;color:var(--text-muted);font-weight:500;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--bg-card)}
+tbody td{padding:.65rem .75rem;vertical-align:middle}
+.result{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:500;padding:.15rem .5rem;border-radius:4px;display:inline-block;min-width:56px;text-align:center}
+.result-w{background:rgba(232,230,225,.12);color:var(--text)}
+.result-b{background:rgba(85,85,85,.25);color:var(--text-dim)}
+.result-d{background:rgba(136,136,136,.15);color:var(--draw)}
+.tb{font-size:.72rem;font-weight:600;color:var(--accent);margin-right:.2rem}
+.eco{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text-dim)}
+.date-col{color:var(--text-dim);font-size:.82rem;font-family:'JetBrains Mono',monospace}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* CARDS */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1.25rem;transition:border-color .15s;cursor:pointer}
+.card:hover{border-color:var(--border-lt)}
+.card h3{font-size:.95rem;font-weight:500;margin-bottom:.35rem}
+.card .meta{color:var(--text-dim);font-size:.82rem}
+.card .stat{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:500;color:var(--accent);margin-top:.5rem}
+
+/* DETAIL */
+.detail-header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.detail-header h1{font-size:1.4rem;font-weight:600}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.detail-item label{display:block;font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem}
+.detail-item span{font-size:.95rem;color:var(--text)}
+.moves-box{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:.88rem;line-height:1.8;color:var(--text-dim);margin-bottom:2rem;word-wrap:break-word}
+.stat-row{display:flex;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.stat-box{text-align:center}
+.stat-box .num{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:600}
+.stat-box .label{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.win{color:var(--green)}.loss{color:var(--red)}
+.tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.75rem}
+.tag{font-size:.78rem;padding:.2rem .6rem;border-radius:4px;background:rgba(201,168,76,.12);color:var(--accent);border:1px solid rgba(201,168,76,.2);cursor:pointer}
+.tag:hover{background:rgba(201,168,76,.22)}
+.back{color:var(--text-dim);font-size:.85rem;margin-bottom:1rem;display:inline-block}
+.back:hover{color:var(--text)}
+.empty{text-align:center;padding:3rem;color:var(--text-muted)}
+
+@media(max-width:700px){
+  nav{padding:0 1rem;gap:1rem;overflow-x:auto}
+  .container{padding:1rem}
+  .filters{flex-direction:column}
+  .stat-row{gap:1rem}
+  .detail-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" onclick="go('games')"><span>&#9822;</span> ChessDB</a>
+  <div class="links">
+    <a onclick="go('games')" data-nav="games">Games</a>
+    <a onclick="go('players')" data-nav="players">Players</a>
+    <a onclick="go('events')" data-nav="events">Events</a>
+    <a onclick="go('openings')" data-nav="openings">Openings</a>
+    <a onclick="go('collections')" data-nav="collections">Collections</a>
+  </div>
+</nav>
+<div class="container" id="app"></div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA (embedded from SQLite database)
+// ══════════════════════════════════════════
+const players = [{"id":1,"first":"Magnus","last":"Carlsen","title":"GM","rating":2830,"country":"Norway"},{"id":2,"first":"Hikaru","last":"Nakamura","title":"GM","rating":2788,"country":"USA"},{"id":3,"first":"Fabiano","last":"Caruana","title":"GM","rating":2796,"country":"USA"},{"id":4,"first":"Ian","last":"Nepomniachtchi","title":"GM","rating":2771,"country":"Russia"},{"id":5,"first":"Ding","last":"Liren","title":"GM","rating":2780,"country":"China"},{"id":6,"first":"Garry","last":"Kasparov","title":"GM","rating":2851,"country":"Russia"},{"id":7,"first":"Bobby","last":"Fischer","title":"GM","rating":2785,"country":"USA"},{"id":8,"first":"Mikhail","last":"Tal","title":"GM","rating":2620,"country":"Latvia"},{"id":9,"first":"Viswanathan","last":"Anand","title":"GM","rating":2751,"country":"India"},{"id":10,"first":"Alireza","last":"Firouzja","title":"GM","rating":2760,"country":"France"},{"id":11,"first":"Anatoly","last":"Karpov","title":"GM","rating":2780,"country":"Russia"},{"id":12,"first":"Vladimir","last":"Kramnik","title":"GM","rating":2810,"country":"Russia"},{"id":13,"first":"Veselin","last":"Topalov","title":"GM","rating":2813,"country":"Bulgaria"},{"id":14,"first":"Levon","last":"Aronian","title":"GM","rating":2784,"country":"Armenia"},{"id":15,"first":"Maxime","last":"Vachier-Lagrave","title":"GM","rating":2793,"country":"France"},{"id":16,"first":"Wesley","last":"So","title":"GM","rating":2778,"country":"USA"},{"id":17,"first":"Shakhriyar","last":"Mamedyarov","title":"GM","rating":2765,"country":"Azerbaijan"},{"id":18,"first":"Sergey","last":"Karjakin","title":"GM","rating":2773,"country":"Russia"},{"id":19,"first":"Boris","last":"Spassky","title":"GM","rating":2660,"country":"Russia"},{"id":20,"first":"Tigran","last":"Petrosian","title":"GM","rating":2640,"country":"Armenia"},{"id":21,"first":"Jose Raul","last":"Capablanca","title":"GM","rating":2725,"country":"Cuba"},{"id":22,"first":"Alexander","last":"Alekhine","title":"GM","rating":2690,"country":"Russia"},{"id":23,"first":"Emanuel","last":"Lasker","title":"GM","rating":2720,"country":"Germany"},{"id":24,"first":"Wilhelm","last":"Steinitz","title":"GM","rating":2610,"country":"Austria"},{"id":25,"first":"Paul","last":"Morphy","title":"none","rating":2690,"country":"USA"},{"id":26,"first":"Teimour","last":"Radjabov","title":"GM","rating":2765,"country":"Azerbaijan"},{"id":27,"first":"Peter","last":"Svidler","title":"GM","rating":2755,"country":"Russia"},{"id":28,"first":"Anish","last":"Giri","title":"GM","rating":2768,"country":"Netherlands"},{"id":29,"first":"Richard","last":"Rapport","title":"GM","rating":2760,"country":"Hungary"},{"id":30,"first":"Nodirbek","last":"Abdusattorov","title":"GM","rating":2766,"country":"Uzbekistan"},{"id":31,"first":"Dommaraju","last":"Gukesh","title":"GM","rating":2758,"country":"India"},{"id":32,"first":"Praggnanandhaa","last":"Rameshbabu","title":"GM","rating":2747,"country":"India"},{"id":33,"first":"Wei","last":"Yi","title":"GM","rating":2740,"country":"China"},{"id":34,"first":"Pentala","last":"Harikrishna","title":"GM","rating":2720,"country":"India"},{"id":35,"first":"Alexander","last":"Grischuk","title":"GM","rating":2764,"country":"Russia"},{"id":36,"first":"Viktor","last":"Korchnoi","title":"GM","rating":2670,"country":"Switzerland"},{"id":37,"first":"Vassily","last":"Ivanchuk","title":"GM","rating":2740,"country":"Ukraine"},{"id":38,"first":"Michael","last":"Adams","title":"GM","rating":2740,"country":"England"},{"id":39,"first":"Mikhail","last":"Botvinnik","title":"GM","rating":2630,"country":"Russia"},{"id":40,"first":"Vasily","last":"Smyslov","title":"GM","rating":2620,"country":"Russia"},{"id":41,"first":"Jan-Krzysztof","last":"Duda","title":"GM","rating":2750,"country":"Poland"},{"id":42,"first":"Vidit","last":"Gujrathi","title":"GM","rating":2727,"country":"India"},{"id":43,"first":"Nijat","last":"Abasov","title":"GM","rating":2700,"country":"Azerbaijan"},{"id":44,"first":"Alexandr","last":"Predke","title":"GM","rating":2685,"country":"Serbia"},{"id":45,"first":"Sam","last":"Shankland","title":"GM","rating":2720,"country":"USA"}];
+
+
+const events = [{"id":1,"name":"Tata Steel Masters 2024","city":"Wijk aan Zee","country":"Netherlands","start":"2024-01-13","end":"2024-01-28","type":"tournament"},{"id":2,"name":"Candidates Tournament 2024","city":"Toronto","country":"Canada","start":"2024-04-03","end":"2024-04-22","type":"tournament"},{"id":3,"name":"World Chess Championship 2023","city":"Astana","country":"Kazakhstan","start":"2023-04-09","end":"2023-04-30","type":"match"},{"id":4,"name":"Sinquefield Cup 2023","city":"St. Louis","country":"USA","start":"2023-08-17","end":"2023-08-28","type":"tournament"},{"id":5,"name":"Norway Chess 2024","city":"Stavanger","country":"Norway","start":"2024-05-27","end":"2024-06-07","type":"tournament"},{"id":6,"name":"Tata Steel Masters 2023","city":"Wijk aan Zee","country":"Netherlands","start":"2023-01-14","end":"2023-01-29","type":"tournament"},{"id":7,"name":"Candidates Tournament 2022","city":"Madrid","country":"Spain","start":"2022-06-16","end":"2022-07-05","type":"tournament"},{"id":8,"name":"World Chess Championship 2021","city":"Dubai","country":"UAE","start":"2021-11-26","end":"2021-12-12","type":"match"},{"id":9,"name":"Norway Chess 2023","city":"Stavanger","country":"Norway","start":"2023-05-29","end":"2023-06-09","type":"tournament"},{"id":10,"name":"Sinquefield Cup 2022","city":"St. Louis","country":"USA","start":"2022-09-01","end":"2022-09-12","type":"tournament"},{"id":11,"name":"World Championship 2018","city":"London","country":"England","start":"2018-11-09","end":"2018-11-28","type":"match"},{"id":12,"name":"World Championship 2016","city":"New York","country":"USA","start":"2016-11-11","end":"2016-11-30","type":"match"},{"id":13,"name":"Candidates Tournament 2020","city":"Yekaterinburg","country":"Russia","start":"2020-03-17","end":"2021-04-28","type":"tournament"},{"id":14,"name":"World Championship 2013","city":"Chennai","country":"India","start":"2013-11-09","end":"2013-11-22","type":"match"},{"id":15,"name":"World Championship 2000","city":"London","country":"England","start":"2000-10-08","end":"2000-11-02","type":"match"},{"id":16,"name":"World Championship 1972","city":"Reykjavik","country":"Iceland","start":"1972-07-11","end":"1972-09-01","type":"match"},{"id":17,"name":"Zurich Chess Challenge 2014","city":"Zurich","country":"Switzerland","start":"2014-01-29","end":"2014-02-04","type":"tournament"},{"id":18,"name":"Grand Chess Tour 2023","city":"Various","country":"International","start":"2023-03-01","end":"2023-12-15","type":"tournament"},{"id":19,"name":"FIDE Grand Prix 2022","city":"Berlin","country":"Germany","start":"2022-02-03","end":"2022-02-17","type":"tournament"},{"id":20,"name":"World Rapid Championship 2022","city":"Almaty","country":"Kazakhstan","start":"2022-12-25","end":"2022-12-28","type":"tournament"}];
+
+
+const openings = [{"eco":"A04","name":"Reti Opening","family":"Flank"},{"eco":"A10","name":"English Opening","family":"Flank"},{"eco":"A20","name":"English Opening: Reversed Sicilian","family":"Flank"},{"eco":"A45","name":"Trompowsky Attack","family":"Queen Pawn"},{"eco":"B06","name":"Modern Defense","family":"Semi-Open"},{"eco":"B12","name":"Caro-Kann Defense","family":"Semi-Open"},{"eco":"B15","name":"Caro-Kann: Panov Attack","family":"Semi-Open"},{"eco":"B22","name":"Sicilian: Alapin","family":"Sicilian"},{"eco":"B30","name":"Sicilian: Rossolimo","family":"Sicilian"},{"eco":"B33","name":"Sicilian: Sveshnikov","family":"Sicilian"},{"eco":"B48","name":"Sicilian: Taimanov","family":"Sicilian"},{"eco":"B52","name":"Sicilian: Canal Attack","family":"Sicilian"},{"eco":"B90","name":"Sicilian Najdorf","family":"Sicilian"},{"eco":"B96","name":"Sicilian Najdorf: Poisoned Pawn","family":"Sicilian"},{"eco":"C42","name":"Petrov Defense","family":"King Pawn"},{"eco":"C44","name":"Scotch Game","family":"King Pawn"},{"eco":"C45","name":"Scotch Gambit","family":"King Pawn"},{"eco":"C50","name":"Italian Game","family":"King Pawn"},{"eco":"C54","name":"Italian: Giuoco Piano","family":"King Pawn"},{"eco":"C65","name":"Ruy Lopez: Berlin","family":"King Pawn"},{"eco":"C67","name":"Ruy Lopez: Berlin Endgame","family":"King Pawn"},{"eco":"C78","name":"Ruy Lopez: Archangelsk","family":"King Pawn"},{"eco":"C84","name":"Ruy Lopez: Closed","family":"King Pawn"},{"eco":"C88","name":"Ruy Lopez: Marshall Attack","family":"King Pawn"},{"eco":"D06","name":"Queens Gambit","family":"Queen Pawn"},{"eco":"D37","name":"Queens Gambit Declined","family":"Queen Pawn"},{"eco":"D38","name":"QGD: Ragozin Defense","family":"Queen Pawn"},{"eco":"D45","name":"Semi-Slav Defense","family":"Queen Pawn"},{"eco":"D85","name":"Grunfeld Defense","family":"Indian"},{"eco":"D97","name":"Grunfeld: Russian System","family":"Indian"},{"eco":"E04","name":"Catalan Opening","family":"Queen Pawn"},{"eco":"E06","name":"Catalan: Closed","family":"Queen Pawn"},{"eco":"E15","name":"Queens Indian Defense","family":"Indian"},{"eco":"E20","name":"Nimzo-Indian Defense","family":"Indian"},{"eco":"E32","name":"Nimzo-Indian: Classical","family":"Indian"},{"eco":"E60","name":"King's Indian Defense","family":"Indian"},{"eco":"E76","name":"King's Indian: Four Pawns","family":"Indian"},{"eco":"E97","name":"King's Indian: Mar del Plata","family":"Indian"},{"eco":"A30","name":"English: Symmetrical","family":"Flank"},{"eco":"C11","name":"French Defense: Classical","family":"Semi-Open"}];
+
+
+const games = [{"id":1,"white":1,"black":2,"event":1,"eco":"C45","result":"1-0","date":"2024-01-14","moves":"1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Bc4 Nf6 5. O-O Nxe4 6. Re1 d5 7. Bxd5 Qxd5 8. Nc3","round":"1","tc":"90+30"},{"id":2,"white":9,"black":1,"event":1,"eco":"C50","result":"0-1","date":"2024-01-16","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d3 Bc5 5. O-O d6 6. c3 a6","round":"3","tc":"90+30"},{"id":3,"white":3,"black":28,"event":1,"eco":"C65","result":"1/2-1/2","date":"2024-01-17","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3 Bc5 5. Bxc6 dxc6","round":"4","tc":"90+30"},{"id":4,"white":1,"black":15,"event":1,"eco":"B90","result":"1-0","date":"2024-01-19","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 e5","round":"5","tc":"90+30"},{"id":5,"white":28,"black":1,"event":1,"eco":"E06","result":"0-1","date":"2024-01-21","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7 5. Nf3 O-O 6. Qc2 c5","round":"6","tc":"90+30"},{"id":6,"white":10,"black":9,"event":1,"eco":"B12","result":"1/2-1/2","date":"2024-01-18","moves":"1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6 5. Be2 Nd7","round":"4","tc":"90+30"},{"id":7,"white":15,"black":10,"event":1,"eco":"C54","result":"1-0","date":"2024-01-20","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4 Bb4+","round":"5","tc":"90+30"},{"id":8,"white":2,"black":3,"event":1,"eco":"D37","result":"1/2-1/2","date":"2024-01-22","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7 5. Bf4 O-O","round":"7","tc":"90+30"},{"id":9,"white":1,"black":10,"event":1,"eco":"E20","result":"1-0","date":"2024-01-24","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. f3 d5 5. a3 Be7","round":"9","tc":"90+30"},{"id":10,"white":14,"black":1,"event":1,"eco":"C84","result":"0-1","date":"2024-01-26","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. d3 b5","round":"11","tc":"90+30"},{"id":11,"white":3,"black":4,"event":2,"eco":"C65","result":"1/2-1/2","date":"2024-04-04","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3 Bc5 5. Bxc6 dxc6 6. Nbd2 Be6","round":"1","tc":"90+30"},{"id":12,"white":31,"black":32,"event":2,"eco":"D85","result":"1-0","date":"2024-04-05","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5 5. e4 Nxc3 6. bxc3 Bg7","round":"1","tc":"90+30"},{"id":13,"white":10,"black":3,"event":2,"eco":"B12","result":"1/2-1/2","date":"2024-04-06","moves":"1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6 5. Be2 Nd7","round":"2","tc":"90+30"},{"id":14,"white":4,"black":31,"event":2,"eco":"E04","result":"0-1","date":"2024-04-07","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4 5. Nf3 a6","round":"2","tc":"90+30"},{"id":15,"white":32,"black":10,"event":2,"eco":"C42","result":"1/2-1/2","date":"2024-04-08","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4 5. d4 d5","round":"3","tc":"90+30"},{"id":16,"white":3,"black":31,"event":2,"eco":"C50","result":"1/2-1/2","date":"2024-04-09","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d3 Bc5 5. O-O d6","round":"3","tc":"90+30"},{"id":17,"white":4,"black":10,"event":2,"eco":"D38","result":"1-0","date":"2024-04-10","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Bb4 5. cxd5 exd5","round":"4","tc":"90+30"},{"id":18,"white":31,"black":3,"event":2,"eco":"B33","result":"1-0","date":"2024-04-12","moves":"1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5","round":"5","tc":"90+30"},{"id":19,"white":32,"black":4,"event":2,"eco":"C88","result":"1/2-1/2","date":"2024-04-14","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3 d5","round":"7","tc":"90+30"},{"id":20,"white":3,"black":32,"event":2,"eco":"E32","result":"1-0","date":"2024-04-16","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. Qc2 O-O 5. a3 Bxc3+","round":"8","tc":"90+30"},{"id":21,"white":4,"black":5,"event":3,"eco":"D37","result":"0-1","date":"2023-04-09","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7 5. Bf4 O-O 6. e3 b6","round":"1","tc":"120+30"},{"id":22,"white":5,"black":4,"event":3,"eco":"E06","result":"1/2-1/2","date":"2023-04-10","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7 5. Nf3 O-O 6. Qc2 c5","round":"2","tc":"120+30"},{"id":23,"white":4,"black":5,"event":3,"eco":"C84","result":"1/2-1/2","date":"2023-04-12","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"3","tc":"120+30"},{"id":24,"white":5,"black":4,"event":3,"eco":"D37","result":"1-0","date":"2023-04-13","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7 5. Bf4 O-O 6. e3 Nbd7","round":"4","tc":"120+30"},{"id":25,"white":4,"black":5,"event":3,"eco":"C65","result":"1/2-1/2","date":"2023-04-16","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3 Bc5","round":"5","tc":"120+30"},{"id":26,"white":5,"black":4,"event":3,"eco":"E04","result":"1/2-1/2","date":"2023-04-17","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"6","tc":"120+30"},{"id":27,"white":4,"black":5,"event":3,"eco":"C54","result":"1/2-1/2","date":"2023-04-18","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4","round":"7","tc":"120+30"},{"id":28,"white":5,"black":4,"event":3,"eco":"E20","result":"1/2-1/2","date":"2023-04-20","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. f3 d5 5. a3 Be7","round":"8","tc":"120+30"},{"id":29,"white":4,"black":5,"event":3,"eco":"B48","result":"1/2-1/2","date":"2023-04-22","moves":"1. e4 c5 2. Nf3 e6 3. d4 cxd4 4. Nxd4 Nc6 5. Nc3 Qc7 6. Be3 a6","round":"9","tc":"120+30"},{"id":30,"white":5,"black":4,"event":3,"eco":"D45","result":"1/2-1/2","date":"2023-04-23","moves":"1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6 5. e3 Nbd7","round":"10","tc":"120+30"},{"id":31,"white":4,"black":5,"event":3,"eco":"C88","result":"0-1","date":"2023-04-24","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O","round":"11","tc":"120+30"},{"id":32,"white":5,"black":4,"event":3,"eco":"E04","result":"1/2-1/2","date":"2023-04-26","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4 5. Nf3 a6","round":"12","tc":"120+30"},{"id":33,"white":4,"black":5,"event":3,"eco":"C42","result":"0-1","date":"2023-04-28","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4 5. d4 d5","round":"13","tc":"120+30"},{"id":34,"white":5,"black":4,"event":3,"eco":"D85","result":"1-0","date":"2023-04-30","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5 5. e4 Nxc3 6. bxc3 Bg7","round":"14","tc":"120+30"},{"id":35,"white":1,"black":3,"event":4,"eco":"B90","result":"1-0","date":"2023-08-18","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 e5 7. Nb3","round":"2","tc":"90+30"},{"id":36,"white":15,"black":1,"event":4,"eco":"E32","result":"1/2-1/2","date":"2023-08-19","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. Qc2 O-O","round":"3","tc":"90+30"},{"id":37,"white":3,"black":15,"event":4,"eco":"C54","result":"1-0","date":"2023-08-20","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4","round":"4","tc":"90+30"},{"id":38,"white":16,"black":1,"event":4,"eco":"D45","result":"0-1","date":"2023-08-22","moves":"1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6 5. e3","round":"5","tc":"90+30"},{"id":39,"white":1,"black":14,"event":4,"eco":"A10","result":"1-0","date":"2023-08-24","moves":"1. c4 e5 2. g3 Nf6 3. Bg2 d5 4. cxd5 Nxd5","round":"7","tc":"90+30"},{"id":40,"white":3,"black":16,"event":4,"eco":"C65","result":"1/2-1/2","date":"2023-08-25","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3 Bc5","round":"8","tc":"90+30"},{"id":41,"white":14,"black":3,"event":4,"eco":"B33","result":"0-1","date":"2023-08-26","moves":"1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5","round":"9","tc":"90+30"},{"id":42,"white":2,"black":1,"event":5,"eco":"E20","result":"0-1","date":"2024-05-28","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. f3 d5 5. a3 Be7 6. e4 dxe4","round":"1","tc":"120+30"},{"id":43,"white":1,"black":15,"event":5,"eco":"C84","result":"1-0","date":"2024-05-30","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. d3 b5","round":"3","tc":"120+30"},{"id":44,"white":10,"black":1,"event":5,"eco":"D85","result":"0-1","date":"2024-06-01","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5","round":"5","tc":"120+30"},{"id":45,"white":1,"black":32,"event":5,"eco":"B90","result":"1-0","date":"2024-06-03","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6","round":"7","tc":"120+30"},{"id":46,"white":28,"black":1,"event":5,"eco":"E04","result":"0-1","date":"2024-06-05","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4 5. Nf3","round":"9","tc":"120+30"},{"id":47,"white":1,"black":14,"event":6,"eco":"C84","result":"1-0","date":"2023-01-15","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"1","tc":"90+30"},{"id":48,"white":9,"black":1,"event":6,"eco":"C42","result":"0-1","date":"2023-01-17","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4","round":"3","tc":"90+30"},{"id":49,"white":1,"black":17,"event":6,"eco":"B90","result":"1-0","date":"2023-01-19","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6","round":"5","tc":"90+30"},{"id":50,"white":12,"black":1,"event":6,"eco":"D37","result":"0-1","date":"2023-01-21","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"7","tc":"90+30"},{"id":51,"white":1,"black":28,"event":6,"eco":"E06","result":"1-0","date":"2023-01-23","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7 5. Nf3 O-O","round":"9","tc":"90+30"},{"id":52,"white":15,"black":9,"event":6,"eco":"C50","result":"1/2-1/2","date":"2023-01-16","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d3 Bc5","round":"2","tc":"90+30"},{"id":53,"white":28,"black":14,"event":6,"eco":"B12","result":"0-1","date":"2023-01-18","moves":"1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6","round":"4","tc":"90+30"},{"id":54,"white":4,"black":3,"event":7,"eco":"C54","result":"1-0","date":"2022-06-17","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4","round":"1","tc":"90+30"},{"id":55,"white":5,"black":2,"event":7,"eco":"D85","result":"1/2-1/2","date":"2022-06-18","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5","round":"1","tc":"90+30"},{"id":56,"white":3,"black":5,"event":7,"eco":"C67","result":"0-1","date":"2022-06-19","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. O-O Nxe4 5. d4 Nd6 6. Bxc6 dxc6 7. dxe5 Nf5","round":"2","tc":"90+30"},{"id":57,"white":2,"black":4,"event":7,"eco":"E04","result":"1/2-1/2","date":"2022-06-20","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"2","tc":"90+30"},{"id":58,"white":4,"black":5,"event":7,"eco":"D45","result":"1-0","date":"2022-06-22","moves":"1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6 5. e3 Nbd7","round":"4","tc":"90+30"},{"id":59,"white":3,"black":2,"event":7,"eco":"C88","result":"1-0","date":"2022-06-24","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O","round":"5","tc":"90+30"},{"id":60,"white":4,"black":2,"event":7,"eco":"C42","result":"1-0","date":"2022-06-28","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4","round":"8","tc":"90+30"},{"id":61,"white":5,"black":3,"event":7,"eco":"E06","result":"1/2-1/2","date":"2022-06-30","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7","round":"9","tc":"90+30"},{"id":62,"white":1,"black":4,"event":8,"eco":"C84","result":"1/2-1/2","date":"2021-11-26","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"1","tc":"120+30"},{"id":63,"white":4,"black":1,"event":8,"eco":"D37","result":"1/2-1/2","date":"2021-11-27","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"2","tc":"120+30"},{"id":64,"white":1,"black":4,"event":8,"eco":"C42","result":"1/2-1/2","date":"2021-11-28","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4","round":"3","tc":"120+30"},{"id":65,"white":4,"black":1,"event":8,"eco":"E06","result":"1/2-1/2","date":"2021-11-30","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7","round":"4","tc":"120+30"},{"id":66,"white":1,"black":4,"event":8,"eco":"C54","result":"1/2-1/2","date":"2021-12-01","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4","round":"5","tc":"120+30"},{"id":67,"white":4,"black":1,"event":8,"eco":"E04","result":"1-0","date":"2021-12-03","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4 5. Nf3 a6","round":"6","tc":"120+30"},{"id":68,"white":1,"black":4,"event":8,"eco":"C84","result":"1/2-1/2","date":"2021-12-05","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. d3 b5","round":"7","tc":"120+30"},{"id":69,"white":4,"black":1,"event":8,"eco":"D37","result":"1/2-1/2","date":"2021-12-07","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7 5. Bf4 O-O","round":"8","tc":"120+30"},{"id":70,"white":1,"black":4,"event":8,"eco":"C42","result":"1/2-1/2","date":"2021-12-08","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4 5. d4 d5","round":"9","tc":"120+30"},{"id":71,"white":4,"black":1,"event":8,"eco":"E06","result":"1/2-1/2","date":"2021-12-10","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7 5. Nf3 O-O","round":"10","tc":"120+30"},{"id":72,"white":1,"black":4,"event":8,"eco":"C54","result":"1-0","date":"2021-12-10","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4 Bb4+","round":"11","tc":"120+30"},{"id":73,"white":1,"black":2,"event":9,"eco":"B90","result":"1-0","date":"2023-05-30","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6","round":"1","tc":"120+30"},{"id":74,"white":3,"black":1,"event":9,"eco":"D37","result":"0-1","date":"2023-06-01","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"3","tc":"120+30"},{"id":75,"white":1,"black":5,"event":9,"eco":"E20","result":"1-0","date":"2023-06-03","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. f3 d5","round":"5","tc":"120+30"},{"id":76,"white":14,"black":1,"event":9,"eco":"C65","result":"0-1","date":"2023-06-05","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3","round":"7","tc":"120+30"},{"id":77,"white":1,"black":9,"event":9,"eco":"A10","result":"1-0","date":"2023-06-07","moves":"1. c4 e5 2. g3 Nf6 3. Bg2 d5","round":"9","tc":"120+30"},{"id":78,"white":1,"black":2,"event":10,"eco":"D37","result":"1-0","date":"2022-09-02","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"1","tc":"90+30"},{"id":79,"white":3,"black":1,"event":10,"eco":"B90","result":"1/2-1/2","date":"2022-09-04","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6","round":"3","tc":"90+30"},{"id":80,"white":15,"black":1,"event":10,"eco":"C42","result":"0-1","date":"2022-09-06","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6","round":"5","tc":"90+30"},{"id":81,"white":1,"black":17,"event":10,"eco":"E04","result":"1-0","date":"2022-09-08","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"7","tc":"90+30"},{"id":82,"white":1,"black":3,"event":11,"eco":"C84","result":"1/2-1/2","date":"2018-11-09","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"1","tc":"120+30"},{"id":83,"white":3,"black":1,"event":11,"eco":"B33","result":"1/2-1/2","date":"2018-11-10","moves":"1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5","round":"2","tc":"120+30"},{"id":84,"white":1,"black":3,"event":11,"eco":"E06","result":"1/2-1/2","date":"2018-11-12","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7","round":"3","tc":"120+30"},{"id":85,"white":3,"black":1,"event":11,"eco":"C42","result":"1/2-1/2","date":"2018-11-13","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4","round":"4","tc":"120+30"},{"id":86,"white":1,"black":3,"event":11,"eco":"D37","result":"1/2-1/2","date":"2018-11-15","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"5","tc":"120+30"},{"id":87,"white":3,"black":1,"event":11,"eco":"E04","result":"1/2-1/2","date":"2018-11-16","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"6","tc":"120+30"},{"id":88,"white":1,"black":3,"event":11,"eco":"C84","result":"1/2-1/2","date":"2018-11-18","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"7","tc":"120+30"},{"id":89,"white":1,"black":18,"event":12,"eco":"D45","result":"1/2-1/2","date":"2016-11-11","moves":"1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6","round":"1","tc":"120+30"},{"id":90,"white":18,"black":1,"event":12,"eco":"C65","result":"1/2-1/2","date":"2016-11-12","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3","round":"2","tc":"120+30"},{"id":91,"white":1,"black":18,"event":12,"eco":"E04","result":"1/2-1/2","date":"2016-11-14","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"3","tc":"120+30"},{"id":92,"white":18,"black":1,"event":12,"eco":"C88","result":"0-1","date":"2016-11-15","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O","round":"4","tc":"120+30"},{"id":93,"white":1,"black":18,"event":12,"eco":"C78","result":"1/2-1/2","date":"2016-11-17","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O b5 6. Bb3 Bc5","round":"5","tc":"120+30"},{"id":94,"white":18,"black":1,"event":12,"eco":"D37","result":"1/2-1/2","date":"2016-11-18","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"6","tc":"120+30"},{"id":95,"white":1,"black":18,"event":12,"eco":"C84","result":"1/2-1/2","date":"2016-11-21","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"8","tc":"120+30"},{"id":96,"white":18,"black":1,"event":12,"eco":"B54","result":"1-0","date":"2016-11-22","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. f3 e5 6. Nb3","round":"9","tc":"120+30"},{"id":97,"white":1,"black":18,"event":12,"eco":"C65","result":"1-0","date":"2016-11-28","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3 Bc5 5. O-O d6","round":"10","tc":"120+30"},{"id":98,"white":6,"black":7,"event":null,"eco":"D06","result":"1-0","date":"1992-09-02","moves":"1. d4 d5 2. c4 dxc4 3. e3 e5 4. Bxc4 exd4 5. exd4 Nf6","round":"1","tc":"120+30"},{"id":99,"white":7,"black":19,"event":16,"eco":"C97","result":"1-0","date":"1972-07-23","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5","round":"6","tc":"150+0"},{"id":100,"white":8,"black":6,"event":null,"eco":"B90","result":"1-0","date":"1960-03-15","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Bg5 e6 7. f4","round":"1","tc":"150+0"},{"id":101,"white":6,"black":11,"event":null,"eco":"E97","result":"1-0","date":"1985-11-09","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. f3 O-O 6. Be3 e5 7. d5","round":"16","tc":"150+0"},{"id":102,"white":11,"black":6,"event":null,"eco":"E04","result":"0-1","date":"1985-10-15","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"11","tc":"150+0"},{"id":103,"white":6,"black":12,"event":15,"eco":"E04","result":"1-0","date":"2000-10-12","moves":"1. d4 d5 2. c4 e6 3. g3 Nf6 4. Bg2","round":"3","tc":"120+30"},{"id":104,"white":12,"black":6,"event":15,"eco":"D85","result":"1/2-1/2","date":"2000-10-14","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5","round":"5","tc":"120+30"},{"id":105,"white":6,"black":12,"event":15,"eco":"B33","result":"1-0","date":"2000-10-18","moves":"1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5","round":"10","tc":"120+30"},{"id":106,"white":7,"black":19,"event":16,"eco":"B96","result":"1-0","date":"1972-07-20","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Bg5 e6 7. f4 Qb6","round":"5","tc":"150+0"},{"id":107,"white":9,"black":1,"event":14,"eco":"D85","result":"0-1","date":"2013-11-09","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5","round":"1","tc":"120+30"},{"id":108,"white":1,"black":9,"event":14,"eco":"B33","result":"1-0","date":"2013-11-12","moves":"1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5","round":"5","tc":"120+30"},{"id":109,"white":9,"black":1,"event":14,"eco":"E15","result":"0-1","date":"2013-11-18","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 b6 4. g3 Bb7","round":"9","tc":"120+30"},{"id":110,"white":15,"black":14,"event":17,"eco":"C84","result":"1-0","date":"2014-01-30","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"1","tc":"90+30"},{"id":111,"white":1,"black":9,"event":17,"eco":"B30","result":"1-0","date":"2014-01-31","moves":"1. e4 c5 2. Nf3 Nc6 3. Bb5 e6","round":"2","tc":"90+30"},{"id":112,"white":9,"black":15,"event":17,"eco":"D37","result":"0-1","date":"2014-02-01","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"3","tc":"90+30"},{"id":113,"white":14,"black":1,"event":17,"eco":"E06","result":"0-1","date":"2014-02-02","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7","round":"4","tc":"90+30"},{"id":114,"white":3,"black":4,"event":13,"eco":"C42","result":"1/2-1/2","date":"2020-03-17","moves":"1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4","round":"1","tc":"90+30"},{"id":115,"white":15,"black":4,"event":13,"eco":"D85","result":"0-1","date":"2020-03-18","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5","round":"1","tc":"90+30"},{"id":116,"white":28,"black":3,"event":13,"eco":"B22","result":"1/2-1/2","date":"2020-03-19","moves":"1. e4 c5 2. c3 Nf6 3. e5 Nd5","round":"2","tc":"90+30"},{"id":117,"white":4,"black":15,"event":13,"eco":"E32","result":"1-0","date":"2020-03-20","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. Qc2 O-O","round":"2","tc":"90+30"},{"id":118,"white":2,"black":14,"event":19,"eco":"C50","result":"1-0","date":"2022-02-04","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d3 Bc5","round":"1","tc":"90+30"},{"id":119,"white":35,"black":2,"event":19,"eco":"D97","result":"1/2-1/2","date":"2022-02-06","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. Nf3 Bg7 5. Qb3","round":"3","tc":"90+30"},{"id":120,"white":14,"black":35,"event":19,"eco":"B52","result":"1-0","date":"2022-02-08","moves":"1. e4 c5 2. Nf3 d6 3. Bb5+ Bd7","round":"5","tc":"90+30"},{"id":121,"white":2,"black":35,"event":19,"eco":"E60","result":"0-1","date":"2022-02-10","moves":"1. d4 Nf6 2. c4 g6 3. f3 d5","round":"7","tc":"90+30"},{"id":122,"white":1,"black":30,"event":20,"eco":"C45","result":"1-0","date":"2022-12-26","moves":"1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Nxd4","round":"3","tc":"15+10"},{"id":123,"white":30,"black":1,"event":20,"eco":"D37","result":"0-1","date":"2022-12-27","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Be7","round":"7","tc":"15+10"},{"id":124,"white":2,"black":30,"event":20,"eco":"B90","result":"1/2-1/2","date":"2022-12-26","moves":"1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6","round":"4","tc":"15+10"},{"id":125,"white":31,"black":3,"event":20,"eco":"E04","result":"1-0","date":"2022-12-27","moves":"1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 dxc4","round":"8","tc":"15+10"},{"id":126,"white":37,"black":12,"event":null,"eco":"B33","result":"1-0","date":"2001-06-15","moves":"1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5","round":"1","tc":"90+30"},{"id":127,"white":13,"black":9,"event":null,"eco":"D45","result":"1-0","date":"2005-03-12","moves":"1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6","round":"3","tc":"90+30"},{"id":128,"white":12,"black":13,"event":null,"eco":"E15","result":"1/2-1/2","date":"2006-09-24","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 b6 4. g3 Ba6","round":"5","tc":"90+30"},{"id":129,"white":9,"black":12,"event":null,"eco":"C88","result":"1-0","date":"2008-02-20","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3","round":"3","tc":"90+30"},{"id":130,"white":3,"black":18,"event":null,"eco":"C65","result":"1/2-1/2","date":"2016-03-15","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. d3 Bc5","round":"1","tc":"90+30"},{"id":131,"white":35,"black":15,"event":null,"eco":"A45","result":"1/2-1/2","date":"2019-07-10","moves":"1. d4 Nf6 2. Bg5 d5 3. Nd2 c5","round":"2","tc":"90+30"},{"id":132,"white":16,"black":2,"event":null,"eco":"A04","result":"1-0","date":"2017-06-20","moves":"1. Nf3 c5 2. g3 Nc6 3. Bg2 g6 4. O-O Bg7","round":"1","tc":"90+30"},{"id":133,"white":17,"black":14,"event":null,"eco":"E76","result":"0-1","date":"2018-04-15","moves":"1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. f4 O-O","round":"3","tc":"90+30"},{"id":134,"white":27,"black":13,"event":null,"eco":"B15","result":"1-0","date":"2005-11-20","moves":"1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 Nf6 5. Nxf6+","round":"1","tc":"90+30"},{"id":135,"white":36,"black":8,"event":null,"eco":"C11","result":"0-1","date":"1962-05-10","moves":"1. e4 e6 2. d4 d5 3. Nc3 Nf6 4. e5 Nfd7 5. f4","round":"1","tc":"150+0"},{"id":136,"white":21,"black":22,"event":null,"eco":"D06","result":"1/2-1/2","date":"1927-11-15","moves":"1. d4 d5 2. c4 e6 3. Nc3 Nf6","round":"1","tc":"150+0"},{"id":137,"white":23,"black":21,"event":null,"eco":"C84","result":"0-1","date":"1921-04-10","moves":"1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7","round":"4","tc":"150+0"},{"id":138,"white":39,"black":40,"event":null,"eco":"E60","result":"1-0","date":"1954-03-20","moves":"1. d4 Nf6 2. c4 g6 3. g3 Bg7 4. Bg2 O-O","round":"12","tc":"150+0"},{"id":139,"white":25,"black":24,"event":null,"eco":"C44","result":"1-0","date":"1858-10-15","moves":"1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Bc4","round":"1","tc":"0+0"},{"id":140,"white":41,"black":4,"event":null,"eco":"C54","result":"1-0","date":"2021-09-15","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4","round":"2","tc":"90+30"},{"id":141,"white":42,"black":31,"event":null,"eco":"D38","result":"1/2-1/2","date":"2023-09-10","moves":"1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Bb4 5. cxd5 exd5","round":"1","tc":"90+30"},{"id":142,"white":33,"black":10,"event":null,"eco":"A30","result":"0-1","date":"2023-07-20","moves":"1. c4 c5 2. Nf3 Nf6 3. g3 b6 4. Bg2 Bb7","round":"3","tc":"90+30"},{"id":143,"white":45,"black":2,"event":null,"eco":"D45","result":"0-1","date":"2019-04-15","moves":"1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6","round":"1","tc":"90+30"},{"id":144,"white":38,"black":1,"event":null,"eco":"B12","result":"0-1","date":"2019-01-20","moves":"1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6","round":"4","tc":"90+30"},{"id":145,"white":29,"black":3,"event":null,"eco":"C50","result":"1/2-1/2","date":"2022-04-10","moves":"1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d3 Bc5","round":"2","tc":"90+30"},{"id":146,"white":30,"black":31,"event":null,"eco":"E20","result":"1-0","date":"2023-05-01","moves":"1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. f3 d5","round":"1","tc":"90+30"},{"id":147,"white":43,"black":44,"event":null,"eco":"B30","result":"1/2-1/2","date":"2023-08-05","moves":"1. e4 c5 2. Nf3 Nc6 3. Bb5 e6","round":"1","tc":"90+30"}];
+
+
+const collections = [{"id":1,"name":"Carlsen Masterpieces","desc":"Best games by Magnus Carlsen"},{"id":2,"name":"Scotch Gambit Study","desc":"Games featuring the Scotch Gambit and Scotch Game"},{"id":3,"name":"World Championship Games","desc":"Games from World Chess Championship matches"},{"id":4,"name":"Sicilian Najdorf Battles","desc":"Notable games in the Najdorf Sicilian"},{"id":5,"name":"Berlin Wall Games","desc":"Games in the Ruy Lopez Berlin endgame"},{"id":6,"name":"Candidates Highlights","desc":"Best games from Candidates tournaments"},{"id":7,"name":"Classic Encounters","desc":"Famous historical games from the greats"},{"id":8,"name":"Indian Defenses","desc":"King's Indian, Nimzo-Indian, and Queen's Indian games"}];
+
+
+const gameCollections = [{"game":1,"col":1},{"game":2,"col":1},{"game":4,"col":1},{"game":5,"col":1},{"game":9,"col":1},{"game":10,"col":1},{"game":35,"col":1},{"game":38,"col":1},{"game":1,"col":2},{"game":122,"col":2},{"game":139,"col":2},{"game":21,"col":3},{"game":22,"col":3},{"game":23,"col":3},{"game":24,"col":3},{"game":25,"col":3},{"game":26,"col":3},{"game":27,"col":3},{"game":28,"col":3},{"game":29,"col":3},{"game":30,"col":3},{"game":31,"col":3},{"game":32,"col":3},{"game":33,"col":3},{"game":34,"col":3},{"game":62,"col":3},{"game":4,"col":4},{"game":35,"col":4},{"game":45,"col":4},{"game":49,"col":4},{"game":73,"col":4},{"game":79,"col":4},{"game":3,"col":5},{"game":11,"col":5},{"game":25,"col":5},{"game":40,"col":5},{"game":56,"col":5},{"game":76,"col":5},{"game":11,"col":6},{"game":12,"col":6},{"game":13,"col":6},{"game":14,"col":6},{"game":15,"col":6},{"game":16,"col":6},{"game":17,"col":6},{"game":18,"col":6},{"game":19,"col":6},{"game":20,"col":6},{"game":98,"col":7},{"game":100,"col":7},{"game":101,"col":7},{"game":102,"col":7},{"game":135,"col":7},{"game":136,"col":7},{"game":5,"col":8},{"game":9,"col":8},{"game":14,"col":8},{"game":20,"col":8},{"game":22,"col":8},{"game":26,"col":8},{"game":28,"col":8},{"game":32,"col":8}];
+
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+const P = id => players.find(p=>p.id===id);
+const E = id => events.find(e=>e.id===id);
+const O = eco => openings.find(o=>o.eco===eco);
+const pname = p => p ? `${p.first} ${p.last}` : '—';
+const ptitle = p => p && p.title && p.title!=='none' ? `<span class="tb">${p.title}</span>` : '';
+const rclass = r => r==='1-0'?'result-w':r==='0-1'?'result-b':'result-d';
+const esc = s => s||'—';
+const app = document.getElementById('app');
+
+function go(view, id) {
+  window.location.hash = id!==undefined ? `${view}/${id}` : view;
+}
+
+function setNav(view) {
+  document.querySelectorAll('[data-nav]').forEach(a => {
+    a.classList.toggle('active', a.dataset.nav === view);
+  });
+}
+
+// ══════════════════════════════════════════
+// VIEWS
+// ══════════════════════════════════════════
+
+function viewGames(params={}) {
+  setNav('games');
+  const search = (params.search||'').toLowerCase();
+  const oFilter = params.opening||'';
+  const rFilter = params.result||'';
+
+  let filtered = games.filter(g => {
+    const wp = P(g.white), bp = P(g.black), ev = E(g.event);
+    if (search && !pname(wp).toLowerCase().includes(search) && !pname(bp).toLowerCase().includes(search) && !(ev&&ev.name.toLowerCase().includes(search))) return false;
+    if (oFilter && g.eco !== oFilter) return false;
+    if (rFilter && g.result !== rFilter) return false;
+    return true;
+  }).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  let openOpts = openings.map(o=>`<option value="${o.eco}" ${oFilter===o.eco?'selected':''}>${o.name} (${o.eco})</option>`).join('');
+
+  app.innerHTML = `
+    <div class="page-header"><div><h1>Games</h1><p>${filtered.length} game${filtered.length!==1?'s':''} in database</p></div></div>
+    <div class="filters">
+      <input type="text" id="f-search" placeholder="Search players or events..." value="${params.search||''}">
+      <select id="f-opening"><option value="">All openings</option>${openOpts}</select>
+      <select id="f-result"><option value="">All results</option><option value="1-0" ${rFilter==='1-0'?'selected':''}>1-0</option><option value="0-1" ${rFilter==='0-1'?'selected':''}>0-1</option><option value="1/2-1/2" ${rFilter==='1/2-1/2'?'selected':''}>½-½</option></select>
+      <button class="btn" onclick="applyFilters()">Filter</button>
+      ${search||oFilter||rFilter?'<button class="btn btn-outline" onclick="go(\'games\')">Clear</button>':''}
+    </div>
+    ${filtered.length ? `<table><thead><tr><th>White</th><th>Result</th><th>Black</th><th>Opening</th><th>Event</th><th>Date</th></tr></thead><tbody>
+      ${filtered.map(g=>{
+        const wp=P(g.white),bp=P(g.black),o=O(g.eco),ev=E(g.event);
+        return `<tr onclick="go('game',${g.id})">
+          <td>${ptitle(wp)}${pname(wp)}</td>
+          <td><span class="result ${rclass(g.result)}">${g.result}</span></td>
+          <td>${ptitle(bp)}${pname(bp)}</td>
+          <td>${o?`<span class="eco">${o.eco}</span> ${o.name}`:'—'}</td>
+          <td>${ev?ev.name:'—'}</td>
+          <td class="date-col">${esc(g.date)}</td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>` : '<div class="empty">No games found.</div>'}`;
+}
+
+function applyFilters() {
+  const s = document.getElementById('f-search').value.trim();
+  const o = document.getElementById('f-opening').value;
+  const r = document.getElementById('f-result').value;
+  let hash = 'games';
+  const p = [];
+  if(s)p.push('search='+encodeURIComponent(s));
+  if(o)p.push('opening='+o);
+  if(r)p.push('result='+encodeURIComponent(r));
+  if(p.length) hash += '?' + p.join('&');
+  window.location.hash = hash;
+}
+
+function viewGame(id) {
+  setNav('games');
+  const g = games.find(x=>x.id===id);
+  if(!g){app.innerHTML='<div class="empty">Game not found.</div>';return;}
+  const wp=P(g.white),bp=P(g.black),o=O(g.eco),ev=E(g.event);
+  const cols = gameCollections.filter(gc=>gc.game===id).map(gc=>collections.find(c=>c.id===gc.col));
+
+  app.innerHTML = `
+    <a class="back" onclick="go('games')">&larr; Back to games</a>
+    <div class="detail-header">
+      <h1>${ptitle(wp)}<a onclick="go('player',${wp.id})">${pname(wp)}</a>
+        <span style="color:var(--text-muted);font-weight:400"> vs </span>
+        ${ptitle(bp)}<a onclick="go('player',${bp.id})">${pname(bp)}</a></h1>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Result</label><span class="result ${rclass(g.result)}">${g.result}</span></div>
+      <div class="detail-item"><label>Date</label><span>${esc(g.date)}</span></div>
+      <div class="detail-item"><label>Round</label><span>${esc(g.round)}</span></div>
+      <div class="detail-item"><label>Time Control</label><span>${esc(g.tc)}</span></div>
+      <div class="detail-item"><label>Event</label><span>${ev?`<a onclick="go('event',${ev.id})">${ev.name}</a>`:'—'}</span></div>
+      <div class="detail-item"><label>Opening</label><span>${o?`<span class="eco">${o.eco}</span> ${o.name} (${o.family})`:'—'}</span></div>
+      <div class="detail-item"><label>White Rating</label><span class="mono">${wp?wp.rating:'—'}</span></div>
+      <div class="detail-item"><label>Black Rating</label><span class="mono">${bp?bp.rating:'—'}</span></div>
+    </div>
+    ${g.moves?`<h3 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-dim)">Moves</h3><div class="moves-box">${g.moves}</div>`:''}
+    ${cols.length?`<h3 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-dim)">Collections</h3><div class="tags">${cols.map(c=>`<a class="tag" onclick="go('collection',${c.id})">${c.name}</a>`).join('')}</div>`:''}`;
+}
+
+function viewPlayers() {
+  setNav('players');
+  const sorted = [...players].sort((a,b)=>b.rating-a.rating);
+  const stats = sorted.map(p => {
+    const pg = games.filter(g=>g.white===p.id||g.black===p.id);
+    const wins = pg.filter(g=>(g.white===p.id&&g.result==='1-0')||(g.black===p.id&&g.result==='0-1')).length;
+    return {...p, total:pg.length, wins};
+  });
+
+  app.innerHTML = `
+    <div class="page-header"><div><h1>Players</h1><p>${players.length} players ranked by rating</p></div></div>
+    <table><thead><tr><th>Player</th><th>Title</th><th>Rating</th><th>Country</th><th>Games</th><th>Wins</th></tr></thead><tbody>
+      ${stats.map(p=>`<tr onclick="go('player',${p.id})">
+        <td>${p.first} ${p.last}</td>
+        <td>${p.title&&p.title!=='none'?`<span class="tb">${p.title}</span>`:'—'}</td>
+        <td><span class="eco">${p.rating||'—'}</span></td>
+        <td>${esc(p.country)}</td>
+        <td>${p.total}</td>
+        <td>${p.wins}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function viewPlayer(id) {
+  setNav('players');
+  const p = P(id);
+  if(!p){app.innerHTML='<div class="empty">Player not found.</div>';return;}
+  const pg = games.filter(g=>g.white===id||g.black===id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const wins = pg.filter(g=>(g.white===id&&g.result==='1-0')||(g.black===id&&g.result==='0-1')).length;
+  const draws = pg.filter(g=>g.result==='1/2-1/2').length;
+  const losses = pg.length - wins - draws;
+  const winPct = pg.length ? Math.round(100*wins/pg.length) : 0;
+
+  app.innerHTML = `
+    <a class="back" onclick="go('players')">&larr; Back to players</a>
+    <div class="detail-header">
+      <h1>${ptitle(p)}${pname(p)}</h1>
+      <p style="color:var(--text-dim)">${esc(p.country)}${p.rating?' &middot; Rating: '+p.rating:''}</p>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="num">${pg.length}</div><div class="label">Games</div></div>
+      <div class="stat-box"><div class="num win">${wins}</div><div class="label">Wins</div></div>
+      <div class="stat-box"><div class="num" style="color:var(--draw)">${draws}</div><div class="label">Draws</div></div>
+      <div class="stat-box"><div class="num loss">${losses}</div><div class="label">Losses</div></div>
+      <div class="stat-box"><div class="num" style="color:var(--accent)">${winPct}%</div><div class="label">Win Rate</div></div>
+    </div>
+    <h3 style="margin-bottom:.75rem;font-size:.95rem">Game History</h3>
+    <table><thead><tr><th>White</th><th>Result</th><th>Black</th><th>Opening</th><th>Event</th><th>Date</th></tr></thead><tbody>
+      ${pg.map(g=>{
+        const wp=P(g.white),bp=P(g.black),o=O(g.eco),ev=E(g.event);
+        return `<tr onclick="go('game',${g.id})">
+          <td>${ptitle(wp)}${pname(wp)}</td>
+          <td><span class="result ${rclass(g.result)}">${g.result}</span></td>
+          <td>${ptitle(bp)}${pname(bp)}</td>
+          <td>${o?o.name:'—'}</td>
+          <td>${ev?ev.name:'—'}</td>
+          <td class="date-col">${esc(g.date)}</td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
+}
+
+function viewEvents() {
+  setNav('events');
+  const sorted = [...events].sort((a,b)=>(b.start||'').localeCompare(a.start||''));
+  app.innerHTML = `
+    <div class="page-header"><div><h1>Events</h1><p>${events.length} events</p></div></div>
+    <div class="card-grid">
+      ${sorted.map(e=>{
+        const count = games.filter(g=>g.event===e.id).length;
+        return `<div class="card" onclick="go('event',${e.id})">
+          <h3>${e.name}</h3>
+          <div class="meta">${e.city}, ${e.country} &middot; ${e.type}</div>
+          <div class="meta">${e.start}${e.end?' &rarr; '+e.end:''}</div>
+          <div class="stat">${count} game${count!==1?'s':''}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function viewEvent(id) {
+  setNav('events');
+  const ev = E(id);
+  if(!ev){app.innerHTML='<div class="empty">Event not found.</div>';return;}
+  const eg = games.filter(g=>g.event===id).sort((a,b)=>(a.round||'').localeCompare(b.round||''));
+
+  app.innerHTML = `
+    <a class="back" onclick="go('events')">&larr; Back to events</a>
+    <div class="detail-header">
+      <h1>${ev.name}</h1>
+      <p style="color:var(--text-dim)">${ev.city}, ${ev.country} &middot; ${ev.type} &middot; ${ev.start}${ev.end?' &rarr; '+ev.end:''}</p>
+    </div>
+    <h3 style="margin-bottom:.75rem;font-size:.95rem">Games (${eg.length})</h3>
+    <table><thead><tr><th>Rd</th><th>White</th><th>Result</th><th>Black</th><th>Opening</th><th>Date</th></tr></thead><tbody>
+      ${eg.map(g=>{
+        const wp=P(g.white),bp=P(g.black),o=O(g.eco);
+        return `<tr onclick="go('game',${g.id})">
+          <td class="eco">${esc(g.round)}</td>
+          <td>${ptitle(wp)}${pname(wp)}</td>
+          <td><span class="result ${rclass(g.result)}">${g.result}</span></td>
+          <td>${ptitle(bp)}${pname(bp)}</td>
+          <td>${o?o.name:'—'}</td>
+          <td class="date-col">${esc(g.date)}</td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
+}
+
+function viewOpenings() {
+  setNav('openings');
+  const sorted = [...openings].sort((a,b)=>a.family.localeCompare(b.family)||a.eco.localeCompare(b.eco));
+  app.innerHTML = `
+    <div class="page-header"><div><h1>Openings</h1><p>${openings.length} openings in database</p></div></div>
+    <table><thead><tr><th>ECO</th><th>Name</th><th>Family</th><th>Games</th><th>White Win %</th></tr></thead><tbody>
+      ${sorted.map(o=>{
+        const og = games.filter(g=>g.eco===o.eco);
+        const ww = og.filter(g=>g.result==='1-0').length;
+        const pct = og.length ? Math.round(100*ww/og.length) : 0;
+        return `<tr>
+          <td class="eco">${o.eco}</td>
+          <td>${o.name}</td>
+          <td style="color:var(--text-dim)">${o.family}</td>
+          <td>${og.length}</td>
+          <td>${og.length?`<span class="eco">${pct}%</span>`:'—'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
+}
+
+function viewCollections() {
+  setNav('collections');
+  app.innerHTML = `
+    <div class="page-header"><div><h1>Collections</h1><p>${collections.length} collections</p></div></div>
+    <div class="card-grid">
+      ${collections.map(c=>{
+        const count = gameCollections.filter(gc=>gc.col===c.id).length;
+        return `<div class="card" onclick="go('collection',${c.id})">
+          <h3>${c.name}</h3>
+          <div class="meta">${c.desc||''}</div>
+          <div class="stat">${count} game${count!==1?'s':''}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function viewCollection(id) {
+  setNav('collections');
+  const col = collections.find(c=>c.id===id);
+  if(!col){app.innerHTML='<div class="empty">Collection not found.</div>';return;}
+  const gids = gameCollections.filter(gc=>gc.col===id).map(gc=>gc.game);
+  const cg = games.filter(g=>gids.includes(g.id)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  app.innerHTML = `
+    <a class="back" onclick="go('collections')">&larr; Back to collections</a>
+    <div class="detail-header">
+      <h1>${col.name}</h1>
+      ${col.desc?`<p style="color:var(--text-dim)">${col.desc}</p>`:''}
+    </div>
+    <h3 style="margin-bottom:.75rem;font-size:.95rem">Games (${cg.length})</h3>
+    <table><thead><tr><th>White</th><th>Result</th><th>Black</th><th>Opening</th><th>Event</th><th>Date</th></tr></thead><tbody>
+      ${cg.map(g=>{
+        const wp=P(g.white),bp=P(g.black),o=O(g.eco),ev=E(g.event);
+        return `<tr onclick="go('game',${g.id})">
+          <td>${ptitle(wp)}${pname(wp)}</td>
+          <td><span class="result ${rclass(g.result)}">${g.result}</span></td>
+          <td>${ptitle(bp)}${pname(bp)}</td>
+          <td>${o?o.name:'—'}</td>
+          <td>${ev?ev.name:'—'}</td>
+          <td class="date-col">${esc(g.date)}</td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
+}
+
+// ══════════════════════════════════════════
+// ROUTER
+// ══════════════════════════════════════════
+function route() {
+  const hash = (window.location.hash||'#games').slice(1);
+  const [path, qs] = hash.split('?');
+  const parts = path.split('/');
+  const view = parts[0];
+  const id = parts[1] ? parseInt(parts[1]) : undefined;
+
+  const params = {};
+  if (qs) qs.split('&').forEach(p => { const [k,v] = p.split('='); params[k] = decodeURIComponent(v); });
+
+  switch(view) {
+    case 'game': viewGame(id); break;
+    case 'players': viewPlayers(); break;
+    case 'player': viewPlayer(id); break;
+    case 'events': viewEvents(); break;
+    case 'event': viewEvent(id); break;
+    case 'openings': viewOpenings(); break;
+    case 'collections': viewCollections(); break;
+    case 'collection': viewCollection(id); break;
+    default: viewGames(params);
+  }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
